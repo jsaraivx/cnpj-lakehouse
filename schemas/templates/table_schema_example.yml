@@ -1,0 +1,14 @@
+table_name: bronzecnpj
+description: Example schema for a bronzecnpj raw table
+columns:
+  - name: id
+    type: string
+    description: Unique identifier
+  - name: cnpj
+    type: string
+    description: Raw CNPJ string
+  - name: updated_at
+    type: timestamp
+    description: ingestion timestamp
+partitions:
+  - updated_at
