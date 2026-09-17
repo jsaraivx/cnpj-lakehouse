@@ -19,10 +19,14 @@ echo "Activating virtualenv... (run 'deactivate' to leave)"
 # shellcheck disable=SC1091
 source .venv/bin/activate
 
-if [ -f "requirements.txt" ]; then
+if [ -f "local-requirements.txt" ]; then
+  echo "Installing local development requirements (PySpark + Jupyter + pytest)..."
+  python -m pip install --upgrade pip
+  python -m pip install -r local-requirements.txt
+elif [ -f "requirements.txt" ]; then
   echo "Installing Python requirements..."
-  pip install --upgrade pip
-  pip install -r requirements.txt
+  python -m pip install --upgrade pip
+  python -m pip install -r requirements.txt
 else
   echo "No requirements.txt found; skipping pip install."
 fi

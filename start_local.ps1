@@ -19,7 +19,11 @@ if (Test-Path $activate) {
   Write-Warning "Could not find Activate.ps1. You can activate manually: .\.venv\Scripts\Activate.ps1"
 }
 
-if (Test-Path "requirements.txt") {
+if (Test-Path "local-requirements.txt") {
+  Write-Host "Installing local development requirements (PySpark + Jupyter + pytest)..."
+  pip install --upgrade pip
+  pip install -r local-requirements.txt
+} elseif (Test-Path "requirements.txt") {
   Write-Host "Installing Python requirements..."
   pip install --upgrade pip
   pip install -r requirements.txt

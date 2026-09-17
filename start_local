@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Canonical local startup entrypoint for macOS/Linux and Git Bash on Windows.
+# Usage: ./start_local
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT_DIR"
+
+echo "[cnpj-lakehouse] Starting local environment (cross-platform shell)..."
+
+if [ ! -d ".venv" ]; then
+  echo "Creating Python virtualenv at .venv..."
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -m venv .venv
+  elif command -v python >/dev/null 2>&1; then
+    python -m venv .venv
+  else
+    echo "Python 3 was not found in PATH. Install Python 3.8+ and try again."
+    exit 1
+  fi
+fi
+
+echo "Activating virtualenv..."
+# shellcheck disable=SC1091
+if [ -f ".venv/bin/activate" ]; then
+  source .venv/bin/activate
+elif [ -f ".venv/Scripts/activate" ]; then
+  source .venv/Scripts/activate
+else
+  echo "Virtualenv activation script not found. Please inspect the .venv folder manually."
+  exit 1
+fi
+
+if [ -f "requirements.txt" ]; then
+  echo "Installing Python requirements..."
+  python -m pip install --upgrade pip
+  python -m pip install -r requirements.txt
+else
+  echo "No requirements.txt found; skipping pip install."
+fi
+
+COMPOSE_DIR="$ROOT_DIR/local-infra"
+if [ -d "$COMPOSE_DIR" ]; then
+  echo "Starting MinIO with Docker Compose..."
+  (cd "$COMPOSE_DIR" && (docker compose up -d || docker-compose up -d))
+  echo "Docker Compose started (MinIO)."
+else
+  echo "Warning: $COMPOSE_DIR not found. Skipping Docker Compose start."
+fi
+
+echo "Local environment ready. Virtualenv is active in this shell."
+echo "MinIO Console: http://localhost:9001"
+echo "MinIO API: http://localhost:9000"
+echo "Credentials: minioadmin / minioadmin"
+echo "Spark UI: http://localhost:4040"
+echo "Use: python -m src.jobs.local_spark_runtime"
+
+echo "Type 'deactivate' to leave the virtual environment."
+
+exit 0
