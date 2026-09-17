@@ -16,6 +16,11 @@ def test_local_compose_is_minio_based():
     assert "minio:" in compose
     assert "9000:9000" in compose
     assert "9001:9001" in compose
+    assert "minio-init:" in compose
+    assert "cnpj-bronze" in compose
+    assert "cnpj-silver" in compose
+    assert "cnpj-gold" in compose
+    assert "cnpj-checkpoints" in compose
 
 
 def test_readme_documents_local_commands():
@@ -24,3 +29,5 @@ def test_readme_documents_local_commands():
 
     assert "./start_local" in readme
     assert "start_local.ps1" in readme
+    assert "local_job_launcher" in readme
+    assert "validate_schemas.py" in readme

@@ -35,13 +35,22 @@ fi
 COMPOSE_DIR="$ROOT_DIR/local-infra"
 if [ -d "$COMPOSE_DIR" ]; then
   echo "Starting MinIO with Docker Compose..."
-  (cd "$COMPOSE_DIR" && (docker compose up -d || docker-compose up -d))
+  COMPOSE_ENV_ARGS=()
+  if [ -f "$ROOT_DIR/.env" ]; then
+    COMPOSE_ENV_ARGS=(--env-file "$ROOT_DIR/.env")
+  fi
+  (cd "$COMPOSE_DIR" && (docker compose "${COMPOSE_ENV_ARGS[@]}" up -d || docker-compose "${COMPOSE_ENV_ARGS[@]}" up -d))
   echo "Docker Compose started (MinIO)."
 else
   echo "Warning: $COMPOSE_DIR not found. Skipping Docker Compose start."
 fi
 
 echo "Local environment ready. Virtualenv is active in this shell."
-echo "To run ETL: activate venv (if not already) and run your Python/PySpark commands." 
+echo "MinIO Console: http://localhost:9001"
+echo "MinIO API: http://localhost:9000"
+echo "Credentials: minioadmin / minioadmin"
+echo "Buckets: cnpj-raw, cnpj-bronze, cnpj-silver, cnpj-gold, cnpj-checkpoints"
+echo "Spark UI: http://localhost:4040"
+echo "Use: python -m src.jobs.local_spark_runtime"
 
 exit 0
