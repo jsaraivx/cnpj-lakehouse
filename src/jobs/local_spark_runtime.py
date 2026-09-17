@@ -53,7 +53,7 @@ def run_sample_job(stop_session: bool = True) -> str:
     return f"rows={row_count}"
 
 
-if __name__ == "__main__":
+def main() -> None:
     print(f"Spark local runtime ready. {run_sample_job(stop_session=False)}")
     print(f"Spark UI is available at http://localhost:{os.getenv('SPARK_UI_PORT', '4040')}")
 
@@ -65,3 +65,7 @@ if __name__ == "__main__":
     active_session = SparkSession.getActiveSession()
     if active_session is not None:
         active_session.stop()
+
+
+if __name__ == "__main__":
+    main()

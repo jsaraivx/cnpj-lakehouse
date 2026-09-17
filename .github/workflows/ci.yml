@@ -32,7 +32,13 @@ jobs:
         run: python scripts/validate_schemas.py
 
       - name: Run tests
-        run: pytest -q
+        run: >-
+          pytest -q
+          --cov=src.jobs.local_job_launcher
+          --cov=src.jobs.local_spark_runtime
+          --cov=scripts.validate_schemas
+          --cov-report=term-missing
+          --cov-fail-under=85
 
       - name: Run Spark smoke job
         env:
