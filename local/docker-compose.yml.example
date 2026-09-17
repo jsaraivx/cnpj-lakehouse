@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: minio-local
+    ports:
+      - "9000:9000"   # API do S3
+      - "9001:9001"   # Console Web do MinIO
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+volumes:
+  minio_data:
+
+# This file was moved to `local-infra/docker-compose.yml` for a single canonical
+# local infra configuration. Keep this example for reference.
