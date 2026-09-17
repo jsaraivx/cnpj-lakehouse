@@ -1,0 +1,49 @@
+services:
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: cnpj_minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    ports:
+      # Defaults map to 9000:9000 (S3 API) and 9001:9001 (console).
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: quay.io/minio/mc:latest
+    container_name: cnpj_minio_init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      BRONZE_BUCKET: ${BRONZE_BUCKET:-cnpj-bronze}
+      SILVER_BUCKET: ${SILVER_BUCKET:-cnpj-silver}
+      GOLD_BUCKET: ${GOLD_BUCKET:-cnpj-gold}
+      CHECKPOINT_BUCKET: ${CHECKPOINT_BUCKET:-cnpj-checkpoints}
+      RAW_BUCKET: ${RAW_BUCKET:-cnpj-raw}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
+      mc mb --ignore-existing local/$${BRONZE_BUCKET} &&
+      mc mb --ignore-existing local/$${SILVER_BUCKET} &&
+      mc mb --ignore-existing local/$${GOLD_BUCKET} &&
+      mc mb --ignore-existing local/$${CHECKPOINT_BUCKET} &&
+      mc mb --ignore-existing local/$${RAW_BUCKET}
+      "
+    restart: "no"
+
+volumes:
+  minio-data:
+
+# Canonical local MinIO compose used by start_local
