@@ -53,4 +53,5 @@ echo "Buckets: cnpj-raw, cnpj-bronze, cnpj-silver, cnpj-gold, cnpj-checkpoints"
 echo "Spark UI: http://localhost:4040"
 echo "Use: python -m src.jobs.local_spark_runtime"
 
-exit 0
+# Preserve activation when sourced, while still supporting direct execution.
+return 0 2>/dev/null || exit 0

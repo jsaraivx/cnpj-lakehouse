@@ -28,8 +28,10 @@ The topology, service contracts and troubleshooting flow are documented in:
 
 ```bash
 chmod +x start_local
-./start_local
+source ./start_local
 ```
+
+Use `./start_local` when activation persistence is not needed; source the script to keep `.venv` active in the current shell.
 
 ### Windows PowerShell
 

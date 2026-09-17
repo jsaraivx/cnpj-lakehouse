@@ -67,4 +67,5 @@ echo "Use: python -m src.jobs.local_spark_runtime"
 
 echo "Type 'deactivate' to leave the virtual environment."
 
-exit 0
+# Preserve activation when sourced, while still supporting direct execution.
+return 0 2>/dev/null || exit 0
