@@ -1,73 +1,137 @@
 # cnpj-lakehouse
 
-A lakehouse project for the CNPJ Risk Graph Engine (ETL and graph analytics).
+Lakehouse project for the CNPJ Risk Graph Engine. The repository provides a local Spark-first platform for four data engineers to develop ingestion, standardization, enrichment and graph-processing jobs.
 
-This repository contains tooling and jobs to ingest, process and analyze public CNPJ data.
+## Local Stack
 
-**Start Local**
+- PySpark for local batch processing.
+- Jupyter for interactive development.
+- MinIO as the local S3-compatible data lake.
+- Pytest and schema validation as the minimum quality gate.
 
-**Prerequisites:**
-- Python 3.8+ available as `python`/`python3`.
-- Docker Desktop (Docker Engine + Docker Compose) installed and running.
+The topology, service contracts and troubleshooting flow are documented in:
 
-**Files created for local startup**
-- [start_local](start_local#L1) — POSIX script for macOS/Linux (create venv, install local Spark stack, start MinIO).
-- [start_local.ps1](start_local.ps1#L1) — PowerShell script for Windows (create venv, install local Spark stack, start MinIO).
-- [local-infra/docker-compose.yml](local-infra/docker-compose.yml#L1) — Docker Compose to run MinIO locally.
+- [Local runtime topology](docs/devops/local-runtime-topology.md)
+- [Environment variables and service contracts](docs/devops/environment-contracts.md)
+- [Observability and troubleshooting playbook](docs/devops/observability-playbook.md)
+- [Repository flow](docs/devops/repository-flow.md)
 
-**macOS / Linux**
-1. Make the script executable (one-time):
+## Prerequisites
+
+- Python 3.8+ available as `python` or `python3`.
+- Docker Desktop with Docker Compose installed and running.
+- Git.
+
+## Start Local
+
+### macOS/Linux or Git Bash
 
 ```bash
 chmod +x start_local
-```
-
-2. Run the helper to create/activate `.venv`, install requirements and start MinIO:
-
-```bash
 ./start_local
 ```
 
-The script will:
-- Create `.venv` if missing and activate it in the current shell (when sourced/executed).
-- Install the local stack from `local-requirements.txt` when present, including PySpark and Jupyter.
-- Start MinIO using Docker Compose in `local-infra`.
-
-**Windows (PowerShell)**
-1. Open PowerShell and allow script execution for the session if required:
+### Windows PowerShell
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\start_local.ps1
 ```
 
-The PowerShell script will create and activate `.venv`, install the local Spark/Jupyter stack and start MinIO via Docker Compose.
+The startup helper creates `.venv`, installs `local-requirements.txt`, starts MinIO and bootstraps these buckets without manual intervention:
 
-**Spark runtime**
-- Local Spark UI: http://localhost:4040
-- Smoke-check command:
+- `cnpj-raw`
+- `cnpj-bronze`
+- `cnpj-silver`
+- `cnpj-gold`
+- `cnpj-checkpoints`
+
+To override local credentials, ports or bucket names, copy `.env.example` to `.env` before starting the stack. Never commit `.env` or real credentials.
+
+## Run Jobs
+
+Activate the environment if the startup script was executed in a separate shell:
+
+```bash
+source .venv/bin/activate
+```
+
+Run the Spark smoke job:
 
 ```bash
 python -m src.jobs.local_spark_runtime
 ```
 
-**MinIO Access**
-- Console: http://localhost:9001
-- S3 API: http://localhost:9000
-- Default credentials: `minioadmin` / `minioadmin`
+Run any PySpark script through the shared launcher:
 
-**Notes & Troubleshooting**
-- If `docker compose` is not available, scripts attempt `docker-compose` as fallback.
-- If activation doesn't persist, open a new shell and source the venv manually:
-
-macOS/Linux:
 ```bash
-source .venv/bin/activate
+python -m src.jobs.local_job_launcher path/to/job.py
 ```
 
-Windows PowerShell:
+Keep the Spark UI open for inspection during a smoke run:
+
+```bash
+SPARK_SMOKE_HOLD_SECONDS=30 python -m src.jobs.local_spark_runtime
+```
+
+On PowerShell:
+
 ```powershell
-.\.venv\Scripts\Activate.ps1
+$env:SPARK_SMOKE_HOLD_SECONDS = "30"
+python -m src.jobs.local_spark_runtime
 ```
 
-If you want a Makefile or task runner for common commands, I can add that next.
+Open the Spark UI at <http://localhost:4040>. Jupyter is available after setup with:
+
+```bash
+jupyter lab
+```
+
+## MinIO Access
+
+- Console: <http://localhost:9001>
+- S3 API: <http://localhost:9000>
+- Default local credentials: `minioadmin` / `minioadmin`
+- Health endpoint: <http://localhost:9000/minio/health/live>
+
+Inspect the stack with:
+
+```bash
+docker compose -f local-infra/docker-compose.yml ps
+docker logs cnpj_minio_init
+```
+
+Stop the stack with:
+
+```bash
+docker compose -f local-infra/docker-compose.yml down
+```
+
+## Validation
+
+Run the same checks used by GitHub Actions:
+
+```bash
+python scripts/validate_schemas.py
+pytest -q
+python -m src.jobs.local_spark_runtime
+```
+
+CI runs on pull requests and pushes to `main`/`develop`. It validates every YAML schema, executes tests and runs the Spark smoke job.
+
+## Collaboration Workflow
+
+Use one feature branch per board task:
+
+```bash
+git switch main
+```
+
+Make atomic commits using the repository convention, for example:
+
+```text
+feat(infra): bootstrap local lake buckets
+test(ci): validate schema contracts
+```
+
+Open a PR into the repository integration branch (`develop` when configured, otherwise `main`) with the task, acceptance evidence, commands run and any local limitations. Require green CI and one approval before merge. See [repository flow](docs/devops/repository-flow.md) for the complete policy.
