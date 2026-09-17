@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: cnpj_minio
+    environment:
+      # Standard dev credentials (change if needed)
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web console
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-S", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  minio-data:
+
+# Canonical local MinIO compose used by start_local
