@@ -1,23 +1,36 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# start_local: macOS / Linux helper to create venv, install deps and start MinIO via docker-compose
+# Canonical local startup entrypoint for macOS/Linux and Git Bash on Windows.
 # Usage: ./start_local
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
-echo "[cnpj-lakehouse] Starting local environment (macOS/Linux)..."
+echo "[cnpj-lakehouse] Starting local environment (cross-platform shell)..."
 
-# create virtualenv if missing
 if [ ! -d ".venv" ]; then
   echo "Creating Python virtualenv at .venv..."
-  python3 -m venv .venv
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -m venv .venv
+  elif command -v python >/dev/null 2>&1; then
+    python -m venv .venv
+  else
+    echo "Python 3 was not found in PATH. Install Python 3.8+ and try again."
+    exit 1
+  fi
 fi
 
-echo "Activating virtualenv... (run 'deactivate' to leave)"
+echo "Activating virtualenv..."
 # shellcheck disable=SC1091
-source .venv/bin/activate
+if [ -f ".venv/bin/activate" ]; then
+  source .venv/bin/activate
+elif [ -f ".venv/Scripts/activate" ]; then
+  source .venv/Scripts/activate
+else
+  echo "Virtualenv activation script not found. Please inspect the .venv folder manually."
+  exit 1
+fi
 
 if [ -f "local-requirements.txt" ]; then
   echo "Installing local development requirements (PySpark + Jupyter + pytest)..."
@@ -31,7 +44,6 @@ else
   echo "No requirements.txt found; skipping pip install."
 fi
 
-# start MinIO via docker-compose (local-infra/docker-compose.yml)
 COMPOSE_DIR="$ROOT_DIR/local-infra"
 if [ -d "$COMPOSE_DIR" ]; then
   echo "Starting MinIO with Docker Compose..."
@@ -52,6 +64,8 @@ echo "Credentials: minioadmin / minioadmin"
 echo "Buckets: cnpj-raw, cnpj-bronze, cnpj-silver, cnpj-gold, cnpj-checkpoints"
 echo "Spark UI: http://localhost:4040"
 echo "Use: python -m src.jobs.local_spark_runtime"
+
+echo "Type 'deactivate' to leave the virtual environment."
 
 # Preserve activation when sourced, while still supporting direct execution.
 return 0 2>/dev/null || exit 0

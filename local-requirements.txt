@@ -2,4 +2,6 @@
 
 pyspark==3.5.0
 delta-spark
+jupyter
 pytest
+pytest-cov

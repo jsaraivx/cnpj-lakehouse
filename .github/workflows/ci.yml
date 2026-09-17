@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: local-requirements.txt
+
+      - name: Install local development dependencies
+        run: python -m pip install -r local-requirements.txt
+
+      - name: Validate YAML schemas
+        run: python scripts/validate_schemas.py
+
+      - name: Run tests
+        run: >-
+          pytest -q
+          --cov=src.jobs.local_job_launcher
+          --cov=src.jobs.local_spark_runtime
+          --cov=scripts.validate_schemas
+          --cov-report=term-missing
+          --cov-fail-under=85
+
+      - name: Run Spark smoke job
+        env:
+          SPARK_LOCAL_IP: 127.0.0.1
+        run: python -m src.jobs.local_spark_runtime
