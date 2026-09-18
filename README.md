@@ -173,15 +173,19 @@ docker compose -f local-infra/docker-compose.yml down
 
 ## Validation
 
-Run the same checks used by GitHub Actions:
+Validation is intentionally local-first. After running `start_local`, execute the full validation path with the same PySpark, Jupyter and MinIO dependencies used by development:
 
 ```bash
 python scripts/validate_schemas.py
 pytest -q --cov=src.jobs.local_job_launcher --cov=src.jobs.local_spark_runtime --cov=scripts.validate_schemas --cov-report=term-missing --cov-fail-under=85
+python -m compileall -q src scripts tests
 python -m src.jobs.local_spark_runtime
+docker compose -f local-infra/docker-compose.yml ps
 ```
 
-CI runs on pull requests and pushes to `main`/`develop`. It validates every YAML schema, executes the infrastructure coverage gate and runs the Spark smoke job.
+The test suite includes Spark runtime tests when PySpark is installed. The smoke job confirms Spark execution and the Compose status confirms the local MinIO service. No GitHub Actions workflow is configured for the current case-study phase, so this validation does not incur hosted CI minutes or download the heavy local stack twice.
+
+Production CI/CD is intentionally deferred until the project migrates to AWS with Terraform. At that point, add a separate production workflow for infrastructure plans, deployment checks and cloud smoke tests; do not make local development depend on it.
 
 ## Collaboration Workflow
 
@@ -197,7 +201,7 @@ Move the board task to `In Progress`, implement only that task, and keep the bra
 
 ```text
 feat(infra): bootstrap local lake buckets
-test(ci): validate schema contracts
+test(infra): cover local runtime contracts
 ```
 
 Before opening a PR, run the validation commands above and check the relevant local acceptance criteria. Open a PR into the repository integration branch (`develop` when configured, otherwise `main`) with:
@@ -208,4 +212,4 @@ Before opening a PR, run the validation commands above and check the relevant lo
 - MinIO, Spark UI or output evidence when applicable;
 - known limitations and follow-up work.
 
-Require green CI and one approval before merge. After merge, mark the board task `Done`. See [repository flow](docs/devops/repository-flow.md) for the complete policy.
+Require passing local validation and one approval before merge. After merge, mark the board task `Done`. See [repository flow](docs/devops/repository-flow.md) for the complete policy.
