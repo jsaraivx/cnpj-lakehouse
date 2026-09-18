@@ -9,7 +9,6 @@ import yaml
 
 from scripts import validate_schemas
 from src.jobs import local_job_launcher
-from src.jobs.local_spark_runtime import build_spark_session, run_sample_job
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -112,6 +111,9 @@ def test_launcher_main_delegates_to_selected_job(monkeypatch):
 
 
 def test_spark_runtime_honors_environment_contract(monkeypatch):
+    pytest.importorskip("pyspark")
+    from src.jobs.local_spark_runtime import build_spark_session
+
     monkeypatch.setenv("SPARK_MASTER", "local[1]")
     monkeypatch.setenv("SPARK_APP_NAME", "infrastructure-test")
     monkeypatch.setenv("SPARK_UI_PORT", "4051")
@@ -127,10 +129,14 @@ def test_spark_runtime_honors_environment_contract(monkeypatch):
 
 
 def test_spark_sample_job_returns_expected_count():
+    pytest.importorskip("pyspark")
+    from src.jobs.local_spark_runtime import run_sample_job
+
     assert run_sample_job() == "rows=10"
 
 
 def test_spark_runtime_main_holds_ui_and_stops_session(monkeypatch, capsys):
+    pytest.importorskip("pyspark")
     from src.jobs import local_spark_runtime
 
     monkeypatch.setenv("SPARK_SMOKE_HOLD_SECONDS", "1")

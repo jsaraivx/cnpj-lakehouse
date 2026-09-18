@@ -23,7 +23,7 @@
   - task/issue id
   - local validation commands
   - acceptance criteria evidence
-- Require CI green for merge.
+- Require the documented local validation commands to pass before merge.
 - Require at least one approval.
 
 ## Release Flow
@@ -35,5 +35,9 @@
 ## Minimum Quality Gate for Infra and Data PRs
 
 - `python scripts/validate_schemas.py`
-- `pytest -q`
+- `pytest -q --cov=src.jobs.local_job_launcher --cov=src.jobs.local_spark_runtime --cov=scripts.validate_schemas --cov-fail-under=85`
+- `python -m src.jobs.local_spark_runtime`
+- `docker compose -f local-infra/docker-compose.yml ps`
 - README/docs updated when behavior or contracts change.
+
+GitHub Actions and hosted CI are intentionally deferred until the AWS/Terraform production migration. Local development must not depend on hosted CI or cloud resources.
